@@ -357,8 +357,6 @@ public:
 
     void livox_pcl_cbk(const livox_ros_driver::CustomMsg::ConstPtr &msg);
 
-    void livo_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr &msg);
-
     void imu_cbk(const sensor_msgs::Imu::ConstPtr &msg_in);
 
     bool sync_packages(LidarMeasureGroup &meas);

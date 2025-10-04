@@ -1670,8 +1670,7 @@ int Voxel_mapping::service_LiDAR_update()
     }
     else
     {
-        sub_pcl = m_ros_node_ptr->subscribe( m_lid_topic, 200000, &Voxel_mapping::livo_pcl_cbk, this );
-        ROS_INFO( "LIVO LIDAR is triggerd" );
+        sub_pcl = m_ros_node_ptr->subscribe( m_lid_topic, 200000, &Voxel_mapping::standard_pcl_cbk, this );
     }
     // }
     ros::Subscriber sub_imu = m_ros_node_ptr->subscribe( m_imu_topic, 200000, &Voxel_mapping::imu_cbk, this );

@@ -332,28 +332,6 @@ void Voxel_mapping::livox_pcl_cbk(const livox_ros_driver::CustomMsg::ConstPtr &m
     m_sig_buffer.notify_all();
 }
 
-void Voxel_mapping::livo_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr &msg)
-{
-    if (!m_lidar_en)
-        return;
-    m_mutex_buffer.lock();
-    // cout<<"got feature"<<endl;
-    if (msg->header.stamp.toSec() < m_last_timestamp_lidar)
-    {
-        ROS_ERROR("lidar loop back, clear buffer");
-        m_lidar_buffer.clear();
-    }
-    // ROS_INFO("get point cloud at time: %.6f", msg->header.stamp.toSec());
-    PointCloudXYZI::Ptr ptr(new PointCloudXYZI());
-    m_p_pre->process(msg, ptr);
-    m_lidar_buffer.push_back(ptr);
-    m_time_buffer.push_back(msg->header.stamp.toSec());
-    m_last_timestamp_lidar = msg->header.stamp.toSec();
-
-    m_mutex_buffer.unlock();
-    m_sig_buffer.notify_all();
-}
-
 void Voxel_mapping::imu_cbk(const sensor_msgs::Imu::ConstPtr &msg_in)
 {
     if (!m_imu_en)
