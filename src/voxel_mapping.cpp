@@ -1670,24 +1670,27 @@ int Voxel_mapping::service_LiDAR_update()
     }
     else
     {
-        sub_pcl = m_ros_node_ptr->subscribe( m_lid_topic, 200000, &Voxel_mapping::standard_pcl_cbk, this );
+        sub_pcl = m_ros_node_ptr->subscribe( m_lid_topic, 200000, &Voxel_mapping::livo_pcl_cbk, this );
+        ROS_INFO( "LIVO LIDAR is triggerd" );
     }
     // }
     ros::Subscriber sub_imu = m_ros_node_ptr->subscribe( m_imu_topic, 200000, &Voxel_mapping::imu_cbk, this );
+    // ros::Subscriber sub_cloud_reg = m_ros_node_ptr->subscribe( m_cloud_reg_topic, 100, &Voxel_mapping::cloud_reg_cbk, this );
     // ros::Subscriber sub_img = m_ros_node_ptr->subscribe(m_img_topic, 200000, img_cbk);
-    ros::Publisher pubLaserCloudFullRes = m_ros_node_ptr->advertise< sensor_msgs::PointCloud2 >( "/cloud_registered", 100 );
-    ros::Publisher pubLaserCloudVoxel = m_ros_node_ptr->advertise< sensor_msgs::PointCloud2 >( "/cloud_voxel", 100 );
-    ros::Publisher pubVisualCloud = m_ros_node_ptr->advertise< sensor_msgs::PointCloud2 >( "/cloud_visual_map", 100 );
-    ros::Publisher pubSubVisualCloud = m_ros_node_ptr->advertise< sensor_msgs::PointCloud2 >( "/cloud_visual_sub_map", 100 );
-    ros::Publisher pubLaserCloudEffect = m_ros_node_ptr->advertise< sensor_msgs::PointCloud2 >( "/cloud_effected", 100 );
-    ros::Publisher pubLaserCloudMap = m_ros_node_ptr->advertise< sensor_msgs::PointCloud2 >( "/Laser_map", 100 );
-    ros::Publisher pubOdomAftMapped = m_ros_node_ptr->advertise< nav_msgs::Odometry >( "/aft_mapped_to_init", 10 );
-    ros::Publisher pubPath = m_ros_node_ptr->advertise< nav_msgs::Path >( "/path", 10 );
-    ros::Publisher plane_pub = m_ros_node_ptr->advertise< visualization_msgs::Marker >( "/planner_normal", 1 );
-    ros::Publisher voxel_pub = m_ros_node_ptr->advertise< visualization_msgs::MarkerArray >( "/voxels", 1 );
+    // ros::Publisher pubLaserCloudFullRes = m_ros_node_ptr->advertise< sensor_msgs::PointCloud2 >( "/cloud_registered_mesh", 100 );
+    // ros::Publisher pubLaserCloudVoxel = m_ros_node_ptr->advertise< sensor_msgs::PointCloud2 >( "/cloud_voxel_mesh", 100 );
+    // ros::Publisher pubVisualCloud = m_ros_node_ptr->advertise< sensor_msgs::PointCloud2 >( "/cloud_visual_map_mesh", 100 );
+    // ros::Publisher pubSubVisualCloud = m_ros_node_ptr->advertise< sensor_msgs::PointCloud2 >( "/cloud_visual_sub_map_mesh", 100 );
+    // ros::Publisher pubLaserCloudEffect = m_ros_node_ptr->advertise< sensor_msgs::PointCloud2 >( "/cloud_effected_mesh", 100 );
+    // ros::Publisher pubLaserCloudMap = m_ros_node_ptr->advertise< sensor_msgs::PointCloud2 >( "/Laser_map_mesh", 100 );
+
+    ros::Publisher pubOdomAftMapped = m_ros_node_ptr->advertise< nav_msgs::Odometry >( "/aft_mapped_to_init_mesh", 10 );
+    ros::Publisher pubPath = m_ros_node_ptr->advertise< nav_msgs::Path >( "/path_mesh", 10 );
+    ros::Publisher plane_pub = m_ros_node_ptr->advertise< visualization_msgs::Marker >( "/planner_normal_mesh", 1 );
+    ros::Publisher voxel_pub = m_ros_node_ptr->advertise< visualization_msgs::MarkerArray >( "/voxels_mesh", 1 );
 
     // #ifdef DEPLOY
-    ros::Publisher mavros_pose_publisher = m_ros_node_ptr->advertise< geometry_msgs::PoseStamped >( "/mavros/vision_pose/pose", 10 );
+    ros::Publisher mavros_pose_publisher = m_ros_node_ptr->advertise< geometry_msgs::PoseStamped >( "/mavros/vision_pose/pose_mesh", 10 );
     // #endif
 
     m_pub_path.header.stamp = ros::Time::now();
@@ -1989,12 +1992,12 @@ int Voxel_mapping::service_LiDAR_update()
         //     RGBpointBodyToWorld( &laserCloudFullRes->points[ i ], &laserCloudWorld->points[ i ] );
         // }
         // *m_pcl_wait_pub = *laserCloudWorld;
-        publish_frame_world( pubLaserCloudFullRes, m_pub_point_skip );
+        // publish_frame_world( pubLaserCloudFullRes, m_pub_point_skip );
 
         if ( m_effect_point_pub )
-            publish_effect_world( pubLaserCloudEffect );
+            // publish_effect_world( pubLaserCloudEffect );
         if ( m_use_new_map )
-            publish_voxel_point( pubLaserCloudVoxel, m_pcl_wait_pub );
+            // publish_voxel_point( pubLaserCloudVoxel, m_pcl_wait_pub );
         // publish_map(pubLaserCloudMap);
         publish_path( pubPath );
         // #ifdef DEPLOY

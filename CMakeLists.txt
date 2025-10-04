@@ -54,7 +54,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 find_package(Eigen3 REQUIRED)
-find_package(PCL 1.6 REQUIRED)
+find_package(PCL 1.10 REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(CGAL REQUIRED)
 FIND_PACKAGE(Boost REQUIRED COMPONENTS filesystem iostreams program_options system serialization)
