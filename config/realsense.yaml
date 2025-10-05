@@ -23,14 +23,14 @@ img_point_cov : 100 #100
 laser_point_cov : 0.001 #0.001
 
 common:
-    lidar_topic:  "/cloud_registered"
+    lidar_topic:  "/livox/lidar"
     imu_topic:  "/livox/imu"
     img_topic: "/camera/color/image_raw"
 
 preprocess:
     point_filter_num: 1
     filter_size_surf: 0.1
-    cloud_type: 2               # VELO16 LiDAR
+    cloud_type: 1               # VELO16 LiDAR
     scan_line: 6
     timestamp_unit: 2
     blind: 0.8 # blind x m disable
