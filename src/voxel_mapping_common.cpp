@@ -649,7 +649,7 @@ void Voxel_mapping::read_ros_parameters(ros::NodeHandle &nh)
     nh.param<double>("laser_point_cov", LASER_POINT_COV, 0.001);
     nh.param<double>("img_point_cov", IMG_POINT_COV, 10);
     nh.param<string>("map_file_path", m_map_file_path, "");
-    nh.param<string>("common/lidar_topic", m_lid_topic, "/cloud_registered");
+    nh.param<string>("common/lidar_topic", m_lid_topic, "/livox/lidar");
     nh.param<string>("common/imu_topic", m_imu_topic, "/livox/imu");
     nh.param<string>("hilti/seq", m_hilti_seq_name, "01");
     nh.param<bool>("hilti/en", m_hilti_en, false);

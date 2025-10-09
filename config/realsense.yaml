@@ -16,7 +16,7 @@ inverse_composition_en: false
 exposure_estimate_en: true
 inv_expo_cov: 0.1
 
-img_enable : 0
+img_enable : 1
 lidar_enable : 1
 outlier_threshold : 1000 # 78 100 156
 img_point_cov : 100 #100

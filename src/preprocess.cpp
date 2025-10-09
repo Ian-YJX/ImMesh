@@ -212,7 +212,7 @@ void Preprocess::avia_handler( const livox_ros_driver::CustomMsg::ConstPtr &msg 
             if ( ( msg->points[ i ].line < N_SCANS ) ) // && ((msg->points[i].tag & 0x30) == 0x10))
             {
                 valid_num++;
-                if ( valid_num % point_filter_num == 0 )
+                if ( valid_num % point_filter_num == 0 &&  msg->points[ i ].x>0)
                 {
                     pl_full[ i ].x = msg->points[ i ].x;
                     pl_full[ i ].y = msg->points[ i ].y;
