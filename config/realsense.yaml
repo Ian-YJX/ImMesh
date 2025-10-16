@@ -86,7 +86,7 @@ image_save:
     interval: 1
 
 meshing:
-    points_minimum_scale: 0.04       # The minimum distance between any of two points
+    points_minimum_scale: 0.02       # The minimum distance between any of two points
     voxel_resolution: 0.1           # The resolution of voxel
     region_size: 10.0               # Size of region
     number_of_pts_append_to_map: 10000  # Number of pts appending to map (per-frame)
