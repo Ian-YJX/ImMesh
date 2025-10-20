@@ -1677,6 +1677,8 @@ int Voxel_mapping::service_LiDAR_update()
     }
     // }
     ros::Subscriber sub_imu = m_ros_node_ptr->subscribe(m_imu_topic, 200000, &Voxel_mapping::imu_cbk, this);
+    ros::Subscriber sub_odom = m_ros_node_ptr->subscribe(m_odom_topic, 200000, &Voxel_mapping::odom_cbk, this);
+    ros::Subscriber sub_mesh = m_ros_node_ptr->subscribe(m_mesh_topic, 100, &Voxel_mapping::mesh_cbk, this);
     // ros::Subscriber sub_cloud_reg = m_ros_node_ptr->subscribe( m_cloud_reg_topic, 100, &Voxel_mapping::cloud_reg_cbk, this );
     // ros::Subscriber sub_img = m_ros_node_ptr->subscribe(m_img_topic, 200000, img_cbk);
     // ros::Publisher pubLaserCloudFullRes = m_ros_node_ptr->advertise< sensor_msgs::PointCloud2 >( "/cloud_registered_mesh", 100 );
@@ -1783,6 +1785,7 @@ int Voxel_mapping::service_LiDAR_update()
     bool status = ros::ok();
     while ((status = ros::ok()))
     {
+        // ROS_INFO("--- status ok ---");
         if (m_flg_exit)
             break;
         ros::spinOnce();
@@ -1977,7 +1980,10 @@ int Voxel_mapping::service_LiDAR_update()
         // cout << "Frame time consumption:" << (t3 - t0)*1000.0 << " ms" << endl;
 
         if (m_lidar_en)
+        {
+            // ROS_INFO("LiDAR enabled, updating map...");
             map_incremental_grow();
+        }
 
         if (m_is_pub_plane_map)
             pubPlaneMap(m_feat_map, voxel_pub, state.pos_end);

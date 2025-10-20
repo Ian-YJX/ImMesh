@@ -140,7 +140,7 @@ public:
     // mutex mtx_buffer_pointcloud;
 
     string m_root_dir = ROOT_DIR;
-    string m_map_file_path, m_lid_topic, m_imu_topic, m_hilti_seq_name, m_img_topic, m_config_file, m_cloud_reg_topic;
+    string m_map_file_path, m_lid_topic, m_imu_topic, m_hilti_seq_name, m_img_topic, m_config_file, m_cloud_reg_topic, m_odom_topic, m_mesh_topic;
     M3D Eye3d = M3D::Identity();
     M3F Eye3f = M3F::Identity();
     V3D Zero3d = V3D::Zero();
@@ -208,6 +208,8 @@ public:
     deque<sensor_msgs::Imu::ConstPtr> m_imu_buffer;
     deque<cv::Mat> m_img_buffer;
     deque<double> m_img_time_buffer;
+    deque<nav_msgs::Odometry::ConstPtr> m_odom_buffer;
+    deque<sensor_msgs::PointCloud2::ConstPtr> m_mesh_buffer;
     vector<bool> m_point_selected_surf;
     vector<vector<int>> m_pointSearchInd_surf;
     vector<PointVector> m_Nearest_Points;
@@ -224,6 +226,7 @@ public:
 
     PointCloudXYZI::Ptr m_feats_undistort = nullptr;
     PointCloudXYZI::Ptr m_feats_down_body = nullptr;
+    PointCloudXYZI::Ptr m_mesh_body = nullptr;
     PointCloudXYZI::Ptr m_feats_down_world = nullptr;
     PointCloudXYZI::Ptr m_normvec = nullptr;
     PointCloudXYZI::Ptr m_laserCloudOri = nullptr;
@@ -299,6 +302,7 @@ public:
         m_sub_map_cur_frame_point = PointCloudXYZI().makeShared();
 
         m_feats_undistort = PointCloudXYZI().makeShared();
+        m_mesh_body = PointCloudXYZI().makeShared();
         m_feats_down_body = PointCloudXYZI().makeShared();
         m_feats_down_world = PointCloudXYZI().makeShared();
 
@@ -373,6 +377,8 @@ public:
 
     void publish_map(const ros::Publisher &pubLaserCloudMap);
 
+    void odom_cbk(const nav_msgs::Odometry::ConstPtr &msg);
+    void mesh_cbk(const sensor_msgs::PointCloud2::ConstPtr &msg);
     template <typename T>
     void set_pose_timestamp(T &out)
     {

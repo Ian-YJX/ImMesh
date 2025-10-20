@@ -26,6 +26,8 @@ common:
     lidar_topic:  "/livox/lidar"
     imu_topic:  "/livox/imu"
     img_topic: "/camera/color/image_raw"
+    mesh_topic: "/cloud_registered"
+    odom_topic: "/aft_mapped_to_init"
 
 preprocess:
     point_filter_num: 1

@@ -288,6 +288,25 @@ void Voxel_mapping::laser_map_fov_segment()
     // printf("Delete Box: %d\n",int(cub_needrm.size()));
 }
 
+void Voxel_mapping::odom_cbk(const nav_msgs::Odometry::ConstPtr &msg)
+{
+    // ROS_INFO("get odom at time: %.6f", msg->header.stamp.toSec());
+    nav_msgs::Odometry::Ptr msg_odom(new nav_msgs::Odometry(*msg));
+    m_mutex_buffer.lock();
+    m_odom_buffer.push_back(msg_odom);
+    m_mutex_buffer.unlock();
+    m_sig_buffer.notify_all();
+}
+
+void Voxel_mapping::mesh_cbk(const sensor_msgs::PointCloud2::ConstPtr &msg)
+{
+    // ROS_INFO("get mesh at time: %.6f", msg->header.stamp.toSec());
+    m_mutex_buffer.lock();
+    pcl::fromROSMsg(*msg, *m_mesh_body);
+    m_mutex_buffer.unlock();
+    m_sig_buffer.notify_all();
+}
+
 void Voxel_mapping::standard_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr &msg)
 {
     if (!m_lidar_en)
@@ -666,7 +685,7 @@ void Voxel_mapping::read_ros_parameters(ros::NodeHandle &nh)
     nh.param<vector<int>>("voxel/layer_init_size", m_layer_init_size, vector<int>());
     nh.param<int>("mapping/imu_int_frame", m_imu_int_frame, 3);
     nh.param<bool>("mapping/imu_en", m_imu_en, false);
-    nh.param<bool>("voxel/voxel_map_en", m_use_new_map, false);
+    nh.param<bool>("voxel/voxel_map_en", m_use_new_map, true);
     nh.param<bool>("voxel/pub_plane_en", m_is_pub_plane_map, false);
     nh.param<double>("voxel/match_eigen_value", m_match_eigen_value, 0.0025);
     nh.param<int>("voxel/layer", m_voxel_layer, 1);
@@ -707,6 +726,8 @@ void Voxel_mapping::read_ros_parameters(ros::NodeHandle &nh)
     nh.param<int>("meshing/enable_mesh_rec", m_if_enable_mesh_rec, 1);
     nh.param<int>("meshing/maximum_thread_for_rec_mesh", m_meshing_maximum_thread_for_rec_mesh, 12);
     nh.param<int>("meshing/number_of_pts_append_to_map", m_meshing_number_of_pts_append_to_map, 10000);
+    nh.param<string>("common/mesh_topic", m_mesh_topic, "/cloud_registered");
+    nh.param<string>("common/odom_topic", m_odom_topic, "/aft_mapped_to_init");
 
     m_p_pre->blind_sqr = m_p_pre->blind * m_p_pre->blind;
     cout << "Ranging cov:" << m_dept_err << " , angle cov:" << m_beam_err << std::endl;

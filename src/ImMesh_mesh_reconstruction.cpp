@@ -372,9 +372,13 @@ std::vector<vec_4> convert_pcl_pointcloud_to_vec(pcl::PointCloud<pcl::PointXYZI>
 
 void Voxel_mapping::map_incremental_grow()
 {
+    // ROS_INFO_STREAM("grow(): m_use_new_map=" << m_use_new_map
+                // << " g_flag_pause=" << std::boolalpha << g_flag_pause);
+
     start_mesh_threads(m_meshing_maximum_thread_for_rec_mesh);
     if (m_use_new_map)
     {
+        // ROS_INFO("Voxel_mapping::map_incremental_grow() with new map.");
         while (g_flag_pause)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -386,7 +390,12 @@ void Voxel_mapping::map_incremental_grow()
         std::vector<Point_with_var> pv_list;
         // TODO: saving pointcloud to file
         // pcl::io::savePCDFileBinary(Common_tools::get_home_folder().append("/r3live_output/").append("last_frame.pcd").c_str(), *m_feats_down_body);
+
+        const Eigen::Matrix3d rot = Eigen::Matrix3d::Identity();
+        const::Eigen::Quaterniond pose_q(rot);
+        const Eigen::Vector3d pose_t = Eigen::Vector3d::Zero();
         transformLidar(state.rot_end, state.pos_end, m_feats_down_body, world_lidar);
+        // transformLidar(rot, t, m_mesh_body, world_lidar);
         for (size_t i = 0; i < world_lidar->size(); i++)
         {
             Point_with_var pv;
@@ -399,17 +408,20 @@ void Voxel_mapping::map_incremental_grow()
             pv_list.push_back(pv);
         }
 
-        // pcl::PointCloud< pcl::PointXYZI >::Ptr world_lidar( new pcl::PointCloud< pcl::PointXYZI > );
         std::sort(pv_list.begin(), pv_list.end(), var_contrast);
         updateVoxelMap(pv_list, m_max_voxel_size, m_max_layer, m_layer_init_size, m_max_points_size, m_min_eigen_value, m_feat_map);
         double vx_map_cost_time = omp_get_wtime();
         g_vx_map_frame_cost_time = (vx_map_cost_time - g_LiDAR_frame_start_time) * 1000.0;
         // cout << "vx_map_cost_time = " <<  g_vx_map_frame_cost_time << " ms" << endl;
 
-        transformLidar(state.rot_end, state.pos_end, m_feats_undistort, world_lidar_full);
-
+        // transformLidar(state.rot_end, state.pos_end, m_feats_undistort, world_lidar_full);
+        // ROS_INFO("pointcloud size for meshing: %lu", m_mesh_body->points.size());
+        transformLidar(rot, pose_t, m_mesh_body, world_lidar_full);
+        // ROS_INFO("Frame %d: pointcloud size for meshing: %lu", g_frame_idx, world_lidar_full->points.size());
+        
         g_mutex_data_package_lock.lock();
-        g_rec_mesh_data_package_list.emplace_back(world_lidar_full, Eigen::Quaterniond(state.rot_end), state.pos_end, g_frame_idx);
+        g_rec_mesh_data_package_list.emplace_back(world_lidar_full, pose_q, pose_t, g_frame_idx);
+        // ROS_INFO("g_rec_mesh_data_package_list size: %lu", g_rec_mesh_data_package_list.size());
         g_mutex_data_package_lock.unlock();
         open_log_file();
         if (g_fp_lio_state != nullptr)
