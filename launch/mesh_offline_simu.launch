@@ -1,0 +1,9 @@
+<launch>
+	<arg name="pcd_file" default="" />
+
+	<param name="pc_name" type="string" value="$(arg pcd_file)" />
+	<rosparam command="load" file="$(find ImMesh)/config/simu_mesh_offline.yaml" />
+	<param name="gui_font_size" type="int" value="20" />
+
+	<node pkg="ImMesh" type="ImMesh_mapping" name="ImMesh_offline" output="screen" />
+</launch>

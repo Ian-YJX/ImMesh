@@ -321,6 +321,15 @@ void start_mesh_threads(int maximum_threads = 20)
     }
 }
 
+// 供 mesh-only 模式调用：将已在世界坐标系的点云帧推入 Mesh 重建队列
+void push_mesh_frame(pcl::PointCloud<pcl::PointXYZI>::Ptr frame_pts)
+{
+    g_mutex_data_package_lock.lock();
+    g_rec_mesh_data_package_list.emplace_back(frame_pts, Eigen::Quaterniond::Identity(), Eigen::Vector3d::Zero(), g_frame_idx);
+    g_mutex_data_package_lock.unlock();
+    g_frame_idx++;
+}
+
 void reconstruct_mesh_from_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr frame_pts, double minimum_pts_distance)
 {
     start_mesh_threads();
@@ -414,10 +423,17 @@ void Voxel_mapping::map_incremental_grow()
         g_vx_map_frame_cost_time = (vx_map_cost_time - g_LiDAR_frame_start_time) * 1000.0;
         // cout << "vx_map_cost_time = " <<  g_vx_map_frame_cost_time << " ms" << endl;
 
-        // transformLidar(state.rot_end, state.pos_end, m_feats_undistort, world_lidar_full);
-        // ROS_INFO("pointcloud size for meshing: %lu", m_mesh_body->points.size());
-        transformLidar(rot, pose_t, m_mesh_body, world_lidar_full);
-        // ROS_INFO("Frame %d: pointcloud size for meshing: %lu", g_frame_idx, world_lidar_full->points.size());
+        // mesh_body (/cloud_registered) 已在世界坐标系，直接拷贝，不施加 extrinsic
+        world_lidar_full->clear();
+        for (size_t i = 0; i < m_mesh_body->size(); i++)
+        {
+            pcl::PointXYZI pi;
+            pi.x = m_mesh_body->points[i].x;
+            pi.y = m_mesh_body->points[i].y;
+            pi.z = m_mesh_body->points[i].z;
+            pi.intensity = m_mesh_body->points[i].intensity;
+            world_lidar_full->points.push_back(pi);
+        }
         
         g_mutex_data_package_lock.lock();
         g_rec_mesh_data_package_list.emplace_back(world_lidar_full, pose_q, pose_t, g_frame_idx);

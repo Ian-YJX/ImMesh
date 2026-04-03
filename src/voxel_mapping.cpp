@@ -1783,6 +1783,56 @@ int Voxel_mapping::service_LiDAR_update()
     // signal( SIGINT, SigHandle );
     ros::Rate rate(5000);
     bool status = ros::ok();
+
+    // ==================== Mesh-only 模式 ====================
+    // lidar_enable=0 时不运行 LIO，只订阅 mesh_topic 做 Mesh 重建
+    if (!m_lidar_en)
+    {
+        ROS_INFO("\033[1;33m[ImMesh] Mesh-only mode: LIO disabled, processing mesh_topic only.\033[0m");
+        extern void start_mesh_threads(int);
+        extern void push_mesh_frame(pcl::PointCloud<pcl::PointXYZI>::Ptr);
+        start_mesh_threads(m_meshing_maximum_thread_for_rec_mesh);
+        while ((status = ros::ok()))
+        {
+            if (m_flg_exit)
+                break;
+            ros::spinOnce();
+
+            // 检查 m_mesh_body 是否有新数据
+            m_mutex_buffer.lock();
+            bool has_data = (m_mesh_body && m_mesh_body->size() > 0);
+            pcl::PointCloud<pcl::PointXYZI>::Ptr mesh_frame;
+            if (has_data)
+            {
+                // PointCloudXYZI = PointXYZINormal，需转为 PointXYZI
+                mesh_frame.reset(new pcl::PointCloud<pcl::PointXYZI>());
+                mesh_frame->reserve(m_mesh_body->size());
+                for (size_t i = 0; i < m_mesh_body->size(); i++)
+                {
+                    pcl::PointXYZI pi;
+                    pi.x = m_mesh_body->points[i].x;
+                    pi.y = m_mesh_body->points[i].y;
+                    pi.z = m_mesh_body->points[i].z;
+                    pi.intensity = m_mesh_body->points[i].intensity;
+                    mesh_frame->points.push_back(pi);
+                }
+                m_mesh_body->clear();
+            }
+            m_mutex_buffer.unlock();
+
+            if (has_data)
+            {
+                push_mesh_frame(mesh_frame);
+            }
+            else
+            {
+                rate.sleep();
+            }
+        }
+        return 0;
+    }
+
+    // ==================== 正常 LIO + Mesh 模式 ====================
     while ((status = ros::ok()))
     {
         // ROS_INFO("--- status ok ---");
