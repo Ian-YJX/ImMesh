@@ -51,6 +51,7 @@ different license.
 #include <so3_math.h>
 #include <thread>
 #include <unistd.h>
+#include <boost/filesystem.hpp>
 
 #include "IMU_Processing.h"
 #include <nav_msgs/Odometry.h>
@@ -59,6 +60,7 @@ different license.
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <pcl/common/transforms.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <tf/transform_broadcaster.h>
@@ -230,16 +232,87 @@ int main(int argc, char **argv)
     }
 
     g_enable_mesh_rec = voxel_mapping.m_if_enable_mesh_rec;
-    cout << "Offline point cloud name: " << ANSI_COLOR_GREEN_BOLD << voxel_mapping.m_pointcloud_file_name << ANSI_COLOR_RESET << endl;
-    if (Common_tools::if_file_exist(voxel_mapping.m_pointcloud_file_name))
+    cout << "Offline point cloud name/dir: " << ANSI_COLOR_GREEN_BOLD << voxel_mapping.m_pointcloud_file_name << ANSI_COLOR_RESET << endl;
+
+    // Read optional offline PCD transform: T_W1_W0 from multi-session config
+    // If present, compute T_W0_to_W1 = inverse(T_W1_to_W0) and apply to loaded PCD
+    // so that offline points (in W0) are transformed into W1 (current session frame)
+    Eigen::Affine3d offline_pc_transform = Eigen::Affine3d::Identity();
+    bool has_offline_transform = false;
+    {
+        std::vector<double> mat_vals;
+        ros::NodeHandle nh_global;
+        if (nh_global.getParam("multi_session/initial_T_W1_W0", mat_vals) && mat_vals.size() == 16)
+        {
+            Eigen::Matrix4d T_W1_to_W0;
+            for (int i = 0; i < 4; ++i)
+                for (int j = 0; j < 4; ++j)
+                    T_W1_to_W0(i, j) = mat_vals[i * 4 + j];
+            offline_pc_transform = Eigen::Affine3d(T_W1_to_W0).inverse(); // T_W0_to_W1
+            has_offline_transform = true;
+            cout << "Offline PCD transform (T_W0_to_W1):\n" << offline_pc_transform.matrix() << endl;
+        }
+    }
+
+    // Support both single PCD file and directory of PCD files
+    bool is_directory = boost::filesystem::is_directory(voxel_mapping.m_pointcloud_file_name);
+    if (is_directory)
+    {
+        pcl::PointCloud<pcl::PointXYZI> merged_pts;
+        std::vector<std::string> pcd_files;
+        for (auto &entry : boost::filesystem::directory_iterator(voxel_mapping.m_pointcloud_file_name))
+        {
+            if (entry.path().extension() == ".pcd")
+                pcd_files.push_back(entry.path().string());
+        }
+        std::sort(pcd_files.begin(), pcd_files.end());
+        cout << "Found " << pcd_files.size() << " PCD files in directory" << endl;
+        for (auto &f : pcd_files)
+        {
+            pcl::PointCloud<pcl::PointXYZI> tmp;
+            fflush(stdout);
+            pcl::io::loadPCDFile(f, tmp);
+            merged_pts += tmp;
+        }
+        if (!merged_pts.empty())
+        {
+            if (has_offline_transform)
+            {
+                pcl::PointCloud<pcl::PointXYZI> transformed;
+                pcl::transformPointCloud(merged_pts, transformed, offline_pc_transform);
+                cout << "Merged total pts = " << transformed.points.size() << " (transformed W0->W1)" << endl;
+                reconstruct_mesh_from_pointcloud(transformed.makeShared());
+            }
+            else
+            {
+                cout << "Merged total pts = " << merged_pts.points.size() << endl;
+                reconstruct_mesh_from_pointcloud(merged_pts.makeShared());
+            }
+        }
+        else
+        {
+            cout << ANSI_COLOR_RED_BOLD << "No PCD files found in directory: " << voxel_mapping.m_pointcloud_file_name << ANSI_COLOR_RESET << endl;
+        }
+    }
+    else if (Common_tools::if_file_exist(voxel_mapping.m_pointcloud_file_name))
     {
         pcl::PointCloud<pcl::PointXYZI> offline_pts;
         cout << "Loading data...";
         fflush(stdout);
         pcl::io::loadPCDFile(voxel_mapping.m_pointcloud_file_name, offline_pts);
-        cout << " total of pts = " << offline_pts.points.size() << endl;
-        cout << "g_map_rgb_pts_mesh.m_minimum_pts_size = " << g_map_rgb_pts_mesh.m_minimum_pts_size << endl;
-        reconstruct_mesh_from_pointcloud(offline_pts.makeShared());
+        if (has_offline_transform)
+        {
+            pcl::PointCloud<pcl::PointXYZI> transformed;
+            pcl::transformPointCloud(offline_pts, transformed, offline_pc_transform);
+            cout << " total of pts = " << transformed.points.size() << " (transformed W0->W1)" << endl;
+            reconstruct_mesh_from_pointcloud(transformed.makeShared());
+        }
+        else
+        {
+            cout << " total of pts = " << offline_pts.points.size() << endl;
+            cout << "g_map_rgb_pts_mesh.m_minimum_pts_size = " << g_map_rgb_pts_mesh.m_minimum_pts_size << endl;
+            reconstruct_mesh_from_pointcloud(offline_pts.makeShared());
+        }
     }
     else if (voxel_mapping.m_pointcloud_file_name.length() > 5)
     {
